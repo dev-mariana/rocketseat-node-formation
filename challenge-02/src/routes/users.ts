@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { knex } from '../database';
 
-export async function UsersRoutes(app: FastifyInstance) {
+export async function usersRoutes(app: FastifyInstance) {
   app.post('/', async (request, reply) => {
     const createUserBodySchema = z.object({
       name: z.string(),
