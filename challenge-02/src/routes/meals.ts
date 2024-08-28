@@ -31,4 +31,36 @@ export async function mealsRoutes(app: FastifyInstance) {
       return reply.status(201).send();
     },
   );
+
+  app.put(
+    '/:id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const updateMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const updateMealBodySchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        isDiet: z.boolean(),
+        datetime: z.string(),
+      });
+
+      const { id } = updateMealParamsSchema.parse(request.params);
+      const { name, description, isDiet, datetime } =
+        updateMealBodySchema.parse(request.body);
+
+      await knex('meals')
+        .update({
+          name,
+          description,
+          isDiet,
+          datetime,
+        })
+        .where({ id });
+
+      return reply.status(204).send();
+    },
+  );
 }
