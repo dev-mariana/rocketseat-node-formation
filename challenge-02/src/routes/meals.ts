@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { knex } from '../database';
 import { checkSessionIdExists } from '../middlewares/check-session-id-exists';
+import { checkMealIdExists } from './helpers/check-meal-id-exists';
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.post(
@@ -33,23 +34,18 @@ export async function mealsRoutes(app: FastifyInstance) {
   );
 
   app.get(
-    '/:user_id',
+    '/:id',
     { preHandler: [checkSessionIdExists] },
     async (request, reply) => {
       const getMealsParamsSchema = z.object({
-        user_id: z.string().uuid(),
+        id: z.string().uuid(),
       });
 
-      const { user_id } = getMealsParamsSchema.parse(request.params);
-      const mealsFromUser = await knex('meals').where({ user_id }).select();
+      const { id } = getMealsParamsSchema.parse(request.params);
 
-      if (mealsFromUser.length <= 0) {
-        return reply
-          .status(404)
-          .send({ error: 'No meals found for this user.' });
-      }
+      const meal = await checkMealIdExists(id);
 
-      return reply.status(200).send({ meals: mealsFromUser });
+      return reply.status(200).send({ meal });
     },
   );
 
@@ -69,8 +65,17 @@ export async function mealsRoutes(app: FastifyInstance) {
       });
 
       const { id } = updateMealParamsSchema.parse(request.params);
+
       const { name, description, isDiet, datetime } =
         updateMealBodySchema.parse(request.body);
+
+      const meal = await checkMealIdExists(id);
+
+      if (!meal) {
+        return reply.status(404).send({
+          error: 'Meal not found.',
+        });
+      }
 
       await knex('meals')
         .update({
@@ -95,9 +100,38 @@ export async function mealsRoutes(app: FastifyInstance) {
 
       const { id } = deleteMealParamsSchema.parse(request.params);
 
+      const meal = await checkMealIdExists(id);
+
+      if (!meal) {
+        return reply.status(404).send({
+          error: 'Meal not found.',
+        });
+      }
+
       await knex('meals').delete().where({ id });
 
       return reply.status(204).send();
+    },
+  );
+
+  app.get(
+    '/users/:user_id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const getMealsParamsSchema = z.object({
+        user_id: z.string().uuid(),
+      });
+
+      const { user_id } = getMealsParamsSchema.parse(request.params);
+      const mealsFromUser = await knex('meals').where({ user_id }).select();
+
+      if (mealsFromUser.length <= 0) {
+        return reply
+          .status(404)
+          .send({ error: 'No meals found for this user.' });
+      }
+
+      return reply.status(200).send({ meals: mealsFromUser });
     },
   );
 }
