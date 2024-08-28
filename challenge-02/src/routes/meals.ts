@@ -63,4 +63,20 @@ export async function mealsRoutes(app: FastifyInstance) {
       return reply.status(204).send();
     },
   );
+
+  app.delete(
+    '/:id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const deleteMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const { id } = deleteMealParamsSchema.parse(request.params);
+
+      await knex('meals').delete().where({ id });
+
+      return reply.status(204).send();
+    },
+  );
 }
