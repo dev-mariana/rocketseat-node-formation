@@ -32,6 +32,27 @@ export async function mealsRoutes(app: FastifyInstance) {
     },
   );
 
+  app.get(
+    '/:user_id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const getMealsParamsSchema = z.object({
+        user_id: z.string().uuid(),
+      });
+
+      const { user_id } = getMealsParamsSchema.parse(request.params);
+      const mealsFromUser = await knex('meals').where({ user_id }).select();
+
+      if (mealsFromUser.length <= 0) {
+        return reply
+          .status(404)
+          .send({ error: 'No meals found for this user.' });
+      }
+
+      return reply.status(200).send({ meals: mealsFromUser });
+    },
+  );
+
   app.put(
     '/:id',
     { preHandler: [checkSessionIdExists] },
