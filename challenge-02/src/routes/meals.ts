@@ -13,11 +13,12 @@ export async function mealsRoutes(app: FastifyInstance) {
         name: z.string(),
         description: z.string(),
         isDiet: z.boolean(),
+        date: z.coerce.date(),
         datetime: z.string(),
         user_id: z.string(),
       });
 
-      const { name, description, isDiet, datetime, user_id } =
+      const { name, description, isDiet, datetime, user_id, date } =
         createMealBodySchema.parse(request.body);
 
       await knex('meals').insert({
@@ -25,6 +26,7 @@ export async function mealsRoutes(app: FastifyInstance) {
         name,
         description,
         isDiet,
+        date: date.getTime(),
         datetime,
         user_id,
       });
@@ -132,6 +134,56 @@ export async function mealsRoutes(app: FastifyInstance) {
       }
 
       return reply.status(200).send({ meals: mealsFromUser });
+    },
+  );
+
+  app.get(
+    '/metrics',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const totalMeals = await knex('meals')
+        .where({ user_id: request.user?.id })
+        .orderBy('date', 'desc');
+
+      const totalMealsDiet = await knex('meals')
+        .where({
+          user_id: request.user?.id,
+          isDiet: true,
+        })
+        .count('id', { as: 'total' })
+        .first();
+
+      const mealsOutDietTotal = await knex('meals')
+        .where({
+          user_id: request.user?.id,
+          isDiet: false,
+        })
+        .count('id', { as: 'total' })
+        .first();
+
+      const mealsSequenceDiet = totalMeals.reduce(
+        (acc, meal) => {
+          if (meal.isDiet) {
+            acc.currentSequence += 1;
+          } else {
+            acc.bestDietSequence = 0;
+          }
+
+          if (acc.currentSequence > acc.bestDietSequence) {
+            acc.bestDietSequence = acc.currentSequence;
+          }
+
+          return acc;
+        },
+        { currentSequence: 0, bestDietSequence: 0 },
+      );
+
+      return reply.status(200).send({
+        totalMeals: totalMeals.length,
+        totalMealsDiet: totalMealsDiet?.total,
+        totalMealsOutDiet: mealsOutDietTotal?.total,
+        bestSequenceDiet: mealsSequenceDiet?.bestDietSequence,
+      });
     },
   );
 }

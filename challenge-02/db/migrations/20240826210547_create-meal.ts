@@ -6,7 +6,8 @@ export async function up(knex: Knex): Promise<void> {
     table.string('name').notNullable();
     table.string('description').notNullable();
     table.boolean('isDiet').notNullable().defaultTo(true);
-    table.timestamp('datetime').notNullable();
+    table.date('date').notNullable();
+    table.timestamp('datetime');
     table
       .uuid('user_id')
       .notNullable()
