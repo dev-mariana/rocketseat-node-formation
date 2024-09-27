@@ -2,7 +2,7 @@ import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-user
 import { compare } from 'bcryptjs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { UserAlreadyExistsError } from './errors/user-already-exists-error';
-import { RegisterUserService } from './register';
+import { RegisterUserService } from './register.service';
 
 describe('Register Service', () => {
   beforeAll(async () => {});
