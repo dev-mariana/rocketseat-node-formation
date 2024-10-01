@@ -3,6 +3,8 @@ import { InMemoryGymsRepository } from '@/repositories/in-memory/in-memory-gyms-
 import { Decimal } from '@prisma/client/runtime/library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CheckInService } from './check-in.service';
+import { MaxDistanceError } from './errors/max-distance-error';
+import { MaxNumberOfCheckInsError } from './errors/max-number-of-check-ins-error';
 
 let checkInsRepository: InMemoryCheckInsRepository;
 let gymsRepository: InMemoryGymsRepository;
@@ -14,13 +16,13 @@ describe('Authentication Service', () => {
     gymsRepository = new InMemoryGymsRepository();
     sut = new CheckInService(checkInsRepository, gymsRepository);
 
-    await gymsRepository.items.push({
+    await gymsRepository.create({
       id: 'gym-01',
       title: 'JavaScript Gym',
-      description: '',
-      phone: '',
-      latitude: new Decimal(-22.9284506),
-      longitude: new Decimal(-43.1816704),
+      description: null,
+      phone: null,
+      latitude: -22.9284506,
+      longitude: -43.1816704,
     });
 
     vi.useFakeTimers();
@@ -58,7 +60,7 @@ describe('Authentication Service', () => {
         user_latitude: -22.9284506,
         user_longitude: -43.1816704,
       }),
-    ).rejects.toBeInstanceOf(Error);
+    ).rejects.toBeInstanceOf(MaxNumberOfCheckInsError);
   });
 
   it('should not be able to check in twice in different days', async () => {
@@ -93,13 +95,6 @@ describe('Authentication Service', () => {
       longitude: new Decimal(-43.1818104),
     });
 
-    // const { checkIn } = await sut.checkIn({
-    //   user_id: 'user-01',
-    //   gym_id: 'gym-02',
-    //   user_latitude: -22.9284506,
-    //   user_longitude: -43.1816704,
-    // });
-
     await expect(() =>
       sut.checkIn({
         user_id: 'user-01',
@@ -107,6 +102,6 @@ describe('Authentication Service', () => {
         user_latitude: -22.9284506,
         user_longitude: -43.1816704,
       }),
-    ).rejects.toBeInstanceOf(Error);
+    ).rejects.toBeInstanceOf(MaxDistanceError);
   });
 });
