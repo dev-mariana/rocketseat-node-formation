@@ -1,14 +1,27 @@
 import { InMemoryCheckInsRepository } from '@/repositories/in-memory/in-memory-check-ins-repository';
+import { InMemoryGymsRepository } from '@/repositories/in-memory/in-memory-gyms-repository';
+import { Decimal } from '@prisma/client/runtime/library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CheckInService } from './check-in.service';
 
 let checkInsRepository: InMemoryCheckInsRepository;
+let gymsRepository: InMemoryGymsRepository;
 let sut: CheckInService;
 
 describe('Authentication Service', () => {
   beforeEach(async () => {
     checkInsRepository = new InMemoryCheckInsRepository();
-    sut = new CheckInService(checkInsRepository);
+    gymsRepository = new InMemoryGymsRepository();
+    sut = new CheckInService(checkInsRepository, gymsRepository);
+
+    await gymsRepository.items.push({
+      id: 'gym-01',
+      title: 'JavaScript Gym',
+      description: '',
+      phone: '',
+      latitude: new Decimal(-22.9284506),
+      longitude: new Decimal(-43.1816704),
+    });
 
     vi.useFakeTimers();
   });
@@ -21,6 +34,8 @@ describe('Authentication Service', () => {
     const { checkIn } = await sut.checkIn({
       user_id: 'user-01',
       gym_id: 'gym-01',
+      user_latitude: -22.9284506,
+      user_longitude: -43.1816704,
     });
 
     expect(checkIn.id).toEqual(expect.any(String));
@@ -32,12 +47,16 @@ describe('Authentication Service', () => {
     await sut.checkIn({
       user_id: 'user-01',
       gym_id: 'gym-01',
+      user_latitude: -22.9284506,
+      user_longitude: -43.1816704,
     });
 
     await expect(() =>
       sut.checkIn({
         user_id: 'user-01',
         gym_id: 'gym-01',
+        user_latitude: -22.9284506,
+        user_longitude: -43.1816704,
       }),
     ).rejects.toBeInstanceOf(Error);
   });
@@ -48,6 +67,8 @@ describe('Authentication Service', () => {
     await sut.checkIn({
       user_id: 'user-01',
       gym_id: 'gym-01',
+      user_latitude: -22.9284506,
+      user_longitude: -43.1816704,
     });
 
     vi.setSystemTime(new Date(2024, 0, 21, 8, 0, 0));
@@ -55,8 +76,37 @@ describe('Authentication Service', () => {
     const { checkIn } = await sut.checkIn({
       user_id: 'user-01',
       gym_id: 'gym-01',
+      user_latitude: -22.9284506,
+      user_longitude: -43.1816704,
     });
 
     expect(checkIn.id).toEqual(expect.any(String));
+  });
+
+  it('should notbe able to check in on distant gym', async () => {
+    await gymsRepository.items.push({
+      id: 'gym-02',
+      title: 'JavaScript Gym',
+      description: '',
+      phone: '',
+      latitude: new Decimal(-22.9128908),
+      longitude: new Decimal(-43.1818104),
+    });
+
+    // const { checkIn } = await sut.checkIn({
+    //   user_id: 'user-01',
+    //   gym_id: 'gym-02',
+    //   user_latitude: -22.9284506,
+    //   user_longitude: -43.1816704,
+    // });
+
+    await expect(() =>
+      sut.checkIn({
+        user_id: 'user-01',
+        gym_id: 'gym-02',
+        user_latitude: -22.9284506,
+        user_longitude: -43.1816704,
+      }),
+    ).rejects.toBeInstanceOf(Error);
   });
 });
