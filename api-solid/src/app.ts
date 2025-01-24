@@ -9,6 +9,8 @@ import { usersRoutes } from './http/controllers/users/routes';
 
 export const app = fastify();
 
+app.register(fastifyCookie);
+
 app.register(fastifyJwt, {
   secret: env.JWT_SECRET,
   cookie: {
@@ -17,8 +19,6 @@ app.register(fastifyJwt, {
   },
   sign: { expiresIn: '10m' },
 });
-
-app.register(fastifyCookie);
 
 app.register(usersRoutes);
 app.register(gymsRoutes);
