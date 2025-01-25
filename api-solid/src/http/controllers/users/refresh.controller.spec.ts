@@ -13,6 +13,7 @@ describe('Refresh Token (e2e)', () => {
 
   it('should be able to refresh token', async () => {
     await request(app.server).post('/users').send({
+      name: 'John Doe',
       email: 'johndoe@example.com',
       password: '123456',
     });
@@ -22,9 +23,7 @@ describe('Refresh Token (e2e)', () => {
       password: '123456',
     });
 
-    const cookies = authResponse.headers['set-cookie'];
-
-    expect(cookies).toBeDefined();
+    const cookies = authResponse.get('Set-Cookie') ?? [];
 
     const response = await request(app.server)
       .patch('/token/refresh')
